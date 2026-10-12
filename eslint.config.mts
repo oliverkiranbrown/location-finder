@@ -32,6 +32,9 @@ export default defineConfig(
 	{
 		// Proper nouns and brand names that keep their canonical casing.
 		files: ['**/*.{ts,cts,mts,tsx}'],
+		plugins: {
+			obsidianmd,
+		},
 		rules: {
 			'obsidianmd/ui/sentence-case': [
 				'warn',
@@ -53,7 +56,7 @@ export default defineConfig(
 		// Unit tests run under plain Node, never inside Obsidian.
 		files: ['tests/**/*.ts'],
 		rules: {
-			'obsidianmd/no-nodejs-modules': 'off',
+			'import/no-nodejs-modules': 'off',
 			// node:test types describe() and it() as void | Promise<void>.
 			'@typescript-eslint/no-floating-promises': 'off',
 		},

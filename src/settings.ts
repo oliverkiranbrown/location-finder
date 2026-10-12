@@ -50,7 +50,7 @@ export class PlaceLocatorSettingTab extends PluginSettingTab {
 			)
 			.addText((text) =>
 				text
-					.setPlaceholder('you@example.com')
+					.setPlaceholder('Email (you@example.com)')
 					.setValue(this.plugin.settings.contact)
 					.onChange(async (value) => {
 						this.plugin.settings.contact = value;
@@ -87,7 +87,6 @@ export class PlaceLocatorSettingTab extends PluginSettingTab {
 				slider
 					.setLimits(1, 10, 1)
 					.setValue(this.plugin.settings.maxResults)
-					.setDynamicTooltip()
 					.onChange(async (value) => {
 						this.plugin.settings.maxResults = value;
 						await this.plugin.saveSettings();
