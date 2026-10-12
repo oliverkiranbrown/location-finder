@@ -1,114 +1,95 @@
+import { Notice, Plugin, requestUrl } from 'obsidian';
+import type { NominatimResult } from './geocode';
 import {
-	Editor,
-	MarkdownView,
-	MarkdownFileInfo,
-	Modal,
-	Notice,
-	Plugin,
-} from 'obsidian';
+	buildQuery,
+	makeUserAgent,
+	NominatimClient,
+	parseCountryCodes,
+} from './geocode';
+import { getLocationHint } from './frontmatter';
+import { PlaceLocatorModal } from './PlaceModal';
 import {
 	DEFAULT_SETTINGS,
-	MyPluginSettings,
-	SampleSettingTab,
+	PlaceLocatorSettingTab,
+	PlaceLocatorSettings,
 } from './settings';
 
-// Remember to rename these classes and interfaces!
+export default class PlaceLocatorPlugin extends Plugin {
+	settings!: PlaceLocatorSettings;
+	private geocoder!: NominatimClient;
+	private ribbonIconEl: HTMLElement | null = null;
 
-export default class MyPlugin extends Plugin {
-	settings!: MyPluginSettings;
-
-	async onload() {
+	async onload(): Promise<void> {
 		await this.loadSettings();
 
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('dice', 'Sample', (_evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status bar text');
-
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-modal-simple',
-			name: 'Open modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			},
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'replace-selected',
-			name: 'Replace selected content',
-			editorCallback: (
-				editor: Editor,
-				_ctx: MarkdownView | MarkdownFileInfo,
-			) => {
-				editor.replaceSelection('Sample editor command');
-			},
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-modal-complex',
-			name: 'Open modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView =
-					this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-				return false;
-			},
-		});
-
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(activeDocument, 'click', (_evt: MouseEvent) => {
-			new Notice('Click');
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(
-			window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000),
+		this.geocoder = new NominatimClient(async (request) =>
+			requestUrl({ ...request, method: 'GET', throw: false }),
 		);
+
+		this.addSettingTab(new PlaceLocatorSettingTab(this.app, this));
+
+		this.addCommand({
+			id: 'locate-place',
+			name: 'Find coordinates for this note',
+			callback: () => this.locatePlace(),
+		});
+
+		this.reloadRibbonIcon();
 	}
 
-	onunload() {}
+	onunload(): void {
+		this.ribbonIconEl?.remove();
+		this.ribbonIconEl = null;
+	}
 
-	async loadSettings() {
+	async loadSettings(): Promise<void> {
 		this.settings = Object.assign(
 			{},
 			DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<MyPluginSettings>,
+			(await this.loadData()) as Partial<PlaceLocatorSettings>,
 		);
 	}
 
-	async saveSettings() {
+	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
 	}
-}
 
-class SampleModal extends Modal {
-	onOpen() {
-		const { contentEl } = this;
-		contentEl.setText('Woah!');
+	reloadRibbonIcon(): void {
+		this.ribbonIconEl?.remove();
+		this.ribbonIconEl = null;
+		if (this.settings.showRibbon) {
+			this.ribbonIconEl = this.addRibbonIcon(
+				'map-pin',
+				'Find coordinates for this note',
+				() => this.locatePlace(),
+			);
+		}
 	}
 
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
+	async geocode(query: string): Promise<NominatimResult[]> {
+		return this.geocoder.search({
+			query,
+			maxResults: this.settings.maxResults,
+			countryCodes: parseCountryCodes(this.settings.countryCodes),
+			userAgent: makeUserAgent(this.manifest.version, this.settings.contact),
+		});
+	}
+
+	private locatePlace(): void {
+		const file = this.app.workspace.getActiveFile();
+		if (file === null || file.extension !== 'md') {
+			new Notice('Place Locator: open a Markdown note first.');
+			return;
+		}
+
+		if (this.settings.contact.trim() === '') {
+			new Notice(
+				'Place Locator: set a contact in plugin settings (required by the Nominatim usage policy).',
+			);
+		}
+
+		const cache = this.app.metadataCache.getFileCache(file);
+		const query = buildQuery(file.basename, getLocationHint(cache));
+		new PlaceLocatorModal(this.app, this, file, query).open();
 	}
 }

@@ -1,8 +1,39 @@
-/*
+/* Place Locator */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+.place-locator-input {
+	width: 100%;
+}
 
-If your plugin does not need CSS, delete this file.
+.place-locator-status {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	min-height: 1.4em;
+	padding: 0.4em 0;
+}
 
-*/
+.place-locator-results {
+	display: flex;
+	flex-direction: column;
+}
+
+.place-locator-result {
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	padding: 0.5em;
+}
+
+.place-locator-result:hover,
+.place-locator-result.is-selected {
+	background-color: var(--background-modifier-hover);
+}
+
+.place-locator-secondary {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.place-locator-osm {
+	display: inline-block;
+	font-size: var(--font-ui-smaller);
+	margin-top: 0.25em;
+}

@@ -29,4 +29,33 @@ export default defineConfig(
 		},
 	},
 	...obsidianmd.configs.recommended,
+	{
+		// Proper nouns and brand names that keep their canonical casing.
+		files: ['**/*.{ts,cts,mts,tsx}'],
+		rules: {
+			'obsidianmd/ui/sentence-case': [
+				'warn',
+				{
+					enforceCamelCaseLower: true,
+					ignoreWords: [
+						'Place',
+						'Locator',
+						'OpenStreetMap',
+						'Nominatim',
+						'User-Agent',
+						'ISO',
+					],
+				},
+			],
+		},
+	},
+	{
+		// Unit tests run under plain Node, never inside Obsidian.
+		files: ['tests/**/*.ts'],
+		rules: {
+			'obsidianmd/no-nodejs-modules': 'off',
+			// node:test types describe() and it() as void | Promise<void>.
+			'@typescript-eslint/no-floating-promises': 'off',
+		},
+	},
 );

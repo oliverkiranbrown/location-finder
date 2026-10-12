@@ -1,92 +1,75 @@
-# Obsidian Sample Plugin
+# Place Locator
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+An Obsidian plugin that geocodes the active note's title with
+[Nominatim](https://nominatim.openstreetmap.org/) (OpenStreetMap) and writes
+the coordinates into the note's YAML frontmatter, so place notes render on a
+world map. It replaces the manual workflow of looking up a place, then
+copying and pasting coordinates.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Usage
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
+1. Open a note named after a place (e.g. `Burj Khalifa.md`).
+2. Run **Place Locator: Find coordinates for this note** from the command
+   palette (bind a hotkey in Obsidian settings, or click the map-pin ribbon
+   icon).
+3. A modal opens with the search box pre-filled from the note title, and
+   searches immediately. If the note has a `location_hint` frontmatter
+   string, it is appended (`"Title, hint"`).
+4. Press Enter to accept the preselected result, move with the arrow keys,
+   or edit the query and pick another result. Esc cancels with no changes.
 
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and outputs a Notice on click.
-- Registers a global interval which logs 'setInterval' to the console.
+The modal is always shown, even with a single result, so you can verify the
+match (each highlighted row links to OpenStreetMap) before anything is
+written. On accept, the plugin writes:
 
-## First time developing plugins?
-
-Quick starting guide for new plugin devs:
-
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `src/main.ts` to `main.js`.
-- Make changes to `src/main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
-
-## Releasing new releases
-
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
-
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
-
-## Adding your plugin to the community plugin list
-
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
-
-## How to use
-
-- Clone this repo.
-- Make sure your NodeJS is at least v18 (`node --version`).
-- `npm i` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
-
-## Manually installing the plugin
-
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
-
-## Improve code quality with eslint
-
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code.
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/obsidianmd/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
-
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-	"fundingUrl": "https://buymeacoffee.com"
-}
+```markdown
+---
+coordinates:
+  - "25.197313473227883"
+  - "55.27439785447675"
+icon: landmark
+color: red
+tags:
+  - spot
+---
 ```
 
-If you have multiple URLs, you can also do:
+Existing `icon` and `color` values and existing tags are never overwritten,
+unrelated frontmatter and the note body are preserved (writes go through
+`processFrontMatter`), and coordinates are always full precision strings.
+If the note already has coordinates, you are asked to confirm before
+overwriting.
 
-```json
-{
-	"fundingUrl": {
-		"Buy Me a Coffee": "https://buymeacoffee.com",
-		"GitHub Sponsor": "https://github.com/sponsors",
-		"Patreon": "https://www.patreon.com/"
-	}
-}
+## Settings
+
+- **Contact for User-Agent** — identifying contact sent with Nominatim
+  requests (required by their usage policy; the plugin warns when empty).
+- **Country bias** — comma-separated ISO country codes (e.g. `us,gb`) to
+  restrict searches.
+- **Max results** — number of results shown (1 to 10).
+- **Default icon / Default color** — written only when missing.
+- **Tag** — added to the note's tags when missing.
+- **Confirm overwrite** — ask before replacing existing coordinates.
+- **Show ribbon icon** — toggle the map-pin ribbon button.
+
+## Privacy
+
+The plugin makes network requests only to
+`https://nominatim.openstreetmap.org/search`, and only when you run the
+command or type in the search box. Your search text is sent to
+OpenStreetMap's Nominatim service; nothing else leaves your vault. Requests
+are rate-limited to one per second per the Nominatim usage policy.
+
+## Development
+
+```bash
+npm install
+npm run dev     # watch build
+npm run build   # type-check + production build (main.js)
+npm test        # unit tests (node:test, no extra dependencies)
+npm run lint    # eslint
 ```
 
-## API Documentation
-
-See https://docs.obsidian.md
+Manual testing: copy or symlink `main.js`, `manifest.json`, and
+`styles.css` into `<Vault>/.obsidian/plugins/place-locator/`, reload
+Obsidian, and enable the plugin in **Settings → Community plugins**.

@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "place-locator",
+	"name": "Place Locator",
 	"version": "1.0.0",
-	"minAppVersion": "1.0.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"minAppVersion": "1.4.4",
+	"description": "Geocode the active note's title with Nominatim and write coordinates into its frontmatter.",
+	"author": "oliverkiranbrown",
+	"authorUrl": "https://github.com/oliverkiranbrown",
 	"isDesktopOnly": false
 }
