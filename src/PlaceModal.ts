@@ -1,4 +1,4 @@
-import { Modal, Notice, Setting } from 'obsidian';
+import { Modal, Notice, Platform, Setting } from 'obsidian';
 import type { App, TFile } from 'obsidian';
 import type { NominatimResult } from './geocode';
 import { describePlace, osmMapUrl } from './geocode';
@@ -66,7 +66,11 @@ export class PlaceLocatorModal extends Modal {
 		);
 
 		this.inputEl.value = this.initialQuery;
-		window.setTimeout(() => this.inputEl.focus(), 0);
+		// Do not steal focus on mobile: the on-screen keyboard would cover
+		// the results the moment the modal opens.
+		if (!Platform.isMobile) {
+			window.setTimeout(() => this.inputEl.focus(), 0);
+		}
 		void this.runSearch();
 	}
 
@@ -160,16 +164,19 @@ export class PlaceLocatorModal extends Modal {
 			}
 
 			if (index === this.selectedIndex) {
+				const url = osmMapUrl(result.lat, result.lon);
 				const link = row.createEl('a', {
 					cls: 'place-locator-osm',
 					text: 'Open in OpenStreetMap',
-					attr: {
-						href: osmMapUrl(result.lat, result.lon),
-						target: '_blank',
-						rel: 'noopener',
-					},
+					attr: { href: url, target: '_blank', rel: 'noopener' },
 				});
-				link.addEventListener('click', (evt) => evt.stopPropagation());
+				link.addEventListener('click', (evt) => {
+					// Route the link through Obsidian's opener, which works on
+					// mobile too; the click must not accept the result.
+					evt.stopPropagation();
+					evt.preventDefault();
+					window.open(url, '_blank');
+				});
 			}
 
 			row.addEventListener('click', () => this.accept(result));

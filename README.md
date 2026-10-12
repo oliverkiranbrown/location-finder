@@ -52,6 +52,23 @@ overwriting.
 - **Confirm overwrite** — ask before replacing existing coordinates.
 - **Show ribbon icon** — toggle the map-pin ribbon button.
 
+## Mobile
+
+The plugin is written to work on Obsidian mobile (`isDesktopOnly` is
+`false`): it only uses mobile-safe APIs (`requestUrl`,
+`processFrontMatter`, standard modals) and no desktop/Electron APIs.
+
+Mobile QA checklist (run on iOS and Android):
+
+- [ ] The command appears in the command palette on a phone/tablet.
+- [ ] The modal opens with the query pre-filled and the first search runs.
+- [ ] Tapping a row writes the frontmatter and shows the notice.
+- [ ] The on-screen keyboard does not cover the results when the modal opens.
+- [ ] Editing the query re-runs the debounced search.
+- [ ] The Open in OpenStreetMap link opens the map.
+- [ ] The overwrite confirmation shows for a note that already has coordinates.
+- [ ] Dismissing the modal cancels without changes to the file.
+
 ## Privacy
 
 The plugin makes network requests only to
